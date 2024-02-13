@@ -5,9 +5,14 @@
             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
             x:Class="AvaloniaGraphs.GraphControl.GraphView"
             xmlns:agc="using:AvaloniaGraphs.GraphControl"
-            x:DataType="agc:GraphControlViewModel"
-            Width="150"
-            Height="150">
-    <Canvas Name="canvas">
-    </Canvas>
+            x:DataType="agc:GraphControlViewModel">
+    <ScrollViewer Grid.Row="4" Grid.Column="1"
+                VerticalScrollBarVisibility="Auto"
+                HorizontalScrollBarVisibility="Auto">
+        <Canvas 
+            Name="canvas"
+            Background="DarkBlue"
+            DragDrop.AllowDrop="True">
+        </Canvas>
+    </ScrollViewer>
 </UserControl>

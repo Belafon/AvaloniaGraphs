@@ -27,6 +27,23 @@ public class GraphEdge : ReactiveObject, INotifyPropertyChanged
 		get => isDirected;
 		set => this.RaiseAndSetIfChanged(ref isDirected, value);
 	}
+	
+	private SolidColorBrush? arrowHeadColor;
+	public SolidColorBrush? ArrowHeadColor { 
+		get => arrowHeadColor;
+		set => this.RaiseAndSetIfChanged(ref arrowHeadColor, value);
+	}
+	
+	private double arrowHeadLength = 12;
+	public double ArrowHeadLength { 
+		get => arrowHeadLength;
+		set => this.RaiseAndSetIfChanged(ref arrowHeadLength, value);
+	}
+	private double arrowHeadWidth = 12;
+	public double ArrowHeadWidth { 
+		get => arrowHeadWidth;
+		set => this.RaiseAndSetIfChanged(ref arrowHeadWidth, value);
+	}
 	public GraphEdge(GraphNode start, GraphNode end, 
 	int thickness = 10)
 	{
@@ -34,5 +51,7 @@ public class GraphEdge : ReactiveObject, INotifyPropertyChanged
 		End = end;
 		Color = new SolidColorBrush(Colors.Red);
 		Thickness = thickness;
+		IsDirected = false;
+		ArrowHeadColor = new SolidColorBrush(Colors.Red);
 	}
 }
