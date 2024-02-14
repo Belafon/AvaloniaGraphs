@@ -13,7 +13,7 @@ public partial class GraphNode : UserControl
 {
 	public GraphNodeViewModel Model { get; }
 	public StackPanel ContentContainer;
-	public GraphNode(int x, int y)
+	public GraphNode(int x = 0, int y = 0)
 	{
 		InitializeComponent();
 		ContentContainer = this.FindControl<StackPanel>("content")!;
@@ -28,7 +28,6 @@ public partial class GraphNode : UserControl
 		RealPosition = new Point(x, y);
 
 	}
-
 
 	public double X
 	{
@@ -68,7 +67,7 @@ public partial class GraphNode : UserControl
 		set => Model.RealPosition = value;
 	}
 
-	internal EventHandler<EventArgsWithPositionDiff> OnRealPositionChangedHandler;
+	internal EventHandler<EventArgsWithPositionDiff>? OnRealPositionChangedHandler;
 	public void SetRealPosition(Point position)
 	{
 		var diff = RealPosition - PositionInCanvas;
@@ -78,7 +77,7 @@ public partial class GraphNode : UserControl
 	}
 
 
-	public EventHandler<PointerPressedEventArgs> OnNodePointerPressedHandler;
+	public EventHandler<PointerPressedEventArgs>? OnNodePointerPressedHandler;
 
 	private void InitializeComponent()
 	{
@@ -116,8 +115,26 @@ public class GraphNodeViewModel : ViewModelBase, INotifyPropertyChanged
 		get => new Point(X, Y);
 		set
 		{
-			if (X == value.X && Y == value.Y)
+			if (X == value.X 
+				&& Y == value.Y)
 				return;
+
+			if(double.IsNaN(value.X) 
+				&& double.IsNaN(X) 
+				&& Y == value.Y)
+				return;
+
+			if(double.IsNaN(Y) 
+				&& double.IsNaN(value.Y) 
+				&& X == value.X)
+				return;
+			
+			if(double.IsNaN(value.X) 
+				&& double.IsNaN(X) 
+				&& double.IsNaN(value.Y) 
+				&& double.IsNaN(Y))
+				return;
+		
 			X = value.X;
 			Y = value.Y;
 			this.RaiseAndSetIfChanged(ref positionInCanvas, value);
