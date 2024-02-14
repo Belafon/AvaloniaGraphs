@@ -9,9 +9,9 @@ namespace AvaloniaGraphs.GraphControl;
 
 public partial class Graph : UserControl
 {
-	public ObservableCollection<GraphNode> Nodes { get; set; } = new();
-	public ObservableCollection<GraphEdge> Edges { get; set; } = new();
-	private Dictionary<GraphNode, List<GraphEdge>> _edgesByNode = new();
+	public ObservableCollection<GraphNode> Nodes { get; private set; } = new();
+	public ObservableCollection<GraphEdge> Edges { get; private set; } = new();
+	public Dictionary<GraphNode, List<GraphEdge>> EdgesByNode = new();
 	public GraphLayout? Layout { 
 		get; 
 		set; 
@@ -31,11 +31,11 @@ public partial class Graph : UserControl
 			{
 				foreach(GraphNode node in args.OldItems)
 				{
-					foreach(var edge in _edgesByNode[node])
+					foreach(var edge in EdgesByNode[node])
 					{
 						Edges.Remove(edge);
 					}
-					_edgesByNode.Remove(node);
+					EdgesByNode.Remove(node);
 				}
 			}
 			
@@ -69,16 +69,16 @@ public partial class Graph : UserControl
 
 	private void addNewEdgeToDictionary(GraphEdge edge)
 	{
-		if (!_edgesByNode.ContainsKey(edge.Start))
+		if (!EdgesByNode.ContainsKey(edge.Start))
 		{
-			_edgesByNode[edge.Start] = new();
+			EdgesByNode[edge.Start] = new();
 		}
-		if (!_edgesByNode.ContainsKey(edge.End))
+		if (!EdgesByNode.ContainsKey(edge.End))
 		{
-			_edgesByNode[edge.End] = new();
+			EdgesByNode[edge.End] = new();
 		}
-		_edgesByNode[edge.Start].Add(edge);
-		_edgesByNode[edge.End].Add(edge);
+		EdgesByNode[edge.Start].Add(edge);
+		EdgesByNode[edge.End].Add(edge);
 	}
 
 }
