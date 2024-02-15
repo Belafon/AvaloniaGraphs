@@ -21,11 +21,6 @@ public class SpringGraphLayout : GraphLayout
 	public bool withAnimation = false;
 	public void ApplyLayout(Graph graph)
 	{
-		applyLayout(graph);
-	}
-
-	public void applyLayout(Graph graph)
-	{
 		if (graph.Nodes.Count == 0)
 			return;
 
@@ -62,10 +57,9 @@ public class SpringGraphLayout : GraphLayout
 		foreach (var subgraph in allGraphComponents)
 		{
 			var startPoint = subgraphsToNodes[subgraph].RealPosition + startBias;
-			var points = SpringLayoutFindingAlgorithm(startPoint, subgraph, xGraphBias, yGraphBias);
-
+			var positions = SpringLayoutFindingAlgorithm(startPoint, subgraph, xGraphBias, yGraphBias);
 		}
-
+		
 	}
 
 	private List<Graph> findAllGraphsComponents(Graph graph)
@@ -98,9 +92,29 @@ public class SpringGraphLayout : GraphLayout
 					{
 						queue.Enqueue(nextNode);
 
-						currentGraph.Edges.Add(edge); // only the sceleton of the graph will be added
+						//currentGraph.Edges.Add(edge); // only the sceleton of the graph will be added
 					}
-					// currentGraph.Edges.Add(edge); // all edges will be added
+					
+					if(visited.Contains(nextNode) == false)
+						currentGraph.Edges.Add(edge);
+					
+					// add edge to currentGraph.Edges, if the nextNode doesnt have an edge to the currentNode
+					if(graph.EdgesByNode.ContainsKey(nextNode) && visited.Contains(nextNode))
+					{
+						var hasEdge = false;
+						foreach(var nextEdge in graph.EdgesByNode[nextNode])
+						{
+							if(nextEdge.Start == currentNode || nextEdge.End == currentNode)
+							{
+								hasEdge = true;
+								break;
+							}
+						}
+						if(hasEdge == false)
+						{
+							currentGraph.Edges.Add(edge);
+						}
+					}
 
 				}
 			}
@@ -118,6 +132,9 @@ public class SpringGraphLayout : GraphLayout
 		if (graph.Nodes.Count == 1)
 		{
 			var node = graph.Nodes.First();
+			
+			node.SetRealPosition(new Point(startPosition.X, startPosition.Y));
+			
 			return new Dictionary<GraphNode, (double x, double y)>() { { node, (startPosition.X, startPosition.Y) } };
 		}
 
@@ -158,6 +175,7 @@ public class SpringGraphLayout : GraphLayout
 				iteration(graph, nodes, edges, nodePositions, width, height);
 
 			}
+			
 			foreach (var node in nodes)
 			{
 				node.SetRealPosition(new Point(nodePositions[node].x, nodePositions[node].y) + startPosition);
@@ -168,10 +186,10 @@ public class SpringGraphLayout : GraphLayout
 	}
 
 	private void iteration(
-		Graph graph, 
-		ObservableCollection<GraphNode> nodes, 
-		ObservableCollection<GraphEdge> edges, 
-		Dictionary<GraphNode, (double x, double y)> nodePositions, 
+		Graph graph,
+		ObservableCollection<GraphNode> nodes,
+		ObservableCollection<GraphEdge> edges,
+		Dictionary<GraphNode, (double x, double y)> nodePositions,
 		int width, int height)
 	{
 		var delta = new Dictionary<GraphNode, (double dx, double dy)>();
@@ -208,21 +226,21 @@ public class SpringGraphLayout : GraphLayout
 			var fx = Math.Min(t, distanceClamped) * (dx / distance);
 			var fy = Math.Min(t, distanceClamped) * (dy / distance);
 			nodePositions[node] = (nodePositions[node].x + fx, nodePositions[node].y + fy);
-			
-			if(nodePositions[node].x > width)
+
+			if (nodePositions[node].x > width)
 				nodePositions[node] = (width, nodePositions[node].y);
-			if(nodePositions[node].y > height)
+			if (nodePositions[node].y > height)
 				nodePositions[node] = (nodePositions[node].x, height);
-			if(nodePositions[node].x < 0)
+			if (nodePositions[node].x < 0)
 				nodePositions[node] = (0, nodePositions[node].y);
-			if(nodePositions[node].y < 0)
+			if (nodePositions[node].y < 0)
 				nodePositions[node] = (nodePositions[node].x, 0);
 		}
 	}
 
 	private void countForceCausedByEdgeLength(
-		Dictionary<GraphNode, (double x, double y)> nodePositions, 
-		Dictionary<GraphNode, (double dx, double dy)> delta, 
+		Dictionary<GraphNode, (double x, double y)> nodePositions,
+		Dictionary<GraphNode, (double dx, double dy)> delta,
 		GraphEdge edge)
 	{
 		var source = edge.Start;
@@ -238,9 +256,9 @@ public class SpringGraphLayout : GraphLayout
 	}
 
 	private static void countForceCausedByLowAngle(
-		Dictionary<GraphNode, (double x, double y)> nodePositions, 
-		Dictionary<GraphNode, (double dx, double dy)> delta, 
-		GraphNode node, 
+		Dictionary<GraphNode, (double x, double y)> nodePositions,
+		Dictionary<GraphNode, (double dx, double dy)> delta,
+		GraphNode node,
 		GraphEdge edge1, GraphEdge edge2)
 	{
 		if (edge1 == edge2)
@@ -255,12 +273,10 @@ public class SpringGraphLayout : GraphLayout
 
 		var dx1 = nodePositions[node].x - nodePositions[source1].x;
 		var dy1 = nodePositions[node].y - nodePositions[source1].y;
-		var vector1 = (dx1, dy1);
 		var sizeVector1 = Math.Sqrt(dx1 * dx1 + dy1 * dy1);
 
 		var dx2 = nodePositions[node].x - nodePositions[source2].x;
 		var dy2 = nodePositions[node].y - nodePositions[source2].y;
-		var vector2 = (dx2, dy2);
 		var sizeVector2 = Math.Sqrt(dx2 * dx2 + dy2 * dy2);
 
 		var dotProduct = dx1 * dx2 + dy1 * dy2;
