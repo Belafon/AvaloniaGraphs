@@ -52,14 +52,24 @@ public partial class MainWindow : Window
 		};
 
 		var node1 = new GraphNode();
-		var node2 = new GraphNode();
+		var node3 = new GraphNode();
+		
+		var node2 = new GraphNode()
+		{
+			ContentControl = new TextBlock()
+			{
+				Text = "Node 2",
+				Foreground = new SolidColorBrush(Colors.White)
+			}
+		};
 
 		graph = new Graph()
 		{
 			Nodes = {
 				node0,
 				node1,
-				node2
+				node2,
+				node3,
 			},
 			Edges = {
 				new GraphEdge(node0, node1){
@@ -74,7 +84,7 @@ public partial class MainWindow : Window
 					IsDirected = true
 				}
 			},
-			Layout = new SpringLayout()
+			Layout = new SpringGraphLayout()
 			{
 				Iterations = 100,
 				Width = 800,
@@ -92,7 +102,7 @@ public partial class MainWindow : Window
 		mainPanel.Children.Add(graphView);
 		
 		
-	/*	new Task(async () =>
+		new Task(async () =>
 		{
 			await Task.Delay(2000);
 			await Dispatcher.UIThread.InvokeAsync(() => 
@@ -102,8 +112,14 @@ public partial class MainWindow : Window
 				node0.SetRealPosition(new(50, 300)));
 			await Task.Delay(2000);
 			await Dispatcher.UIThread.InvokeAsync(() => 
-				node0.SetRealPosition(new(200, 150)));
-		}).Start();*/
+			{
+				var newNode = new GraphNode(){ContentControl = new TextBlock(){Text = "Node 3"}};
+				graph.Nodes.Add(newNode);
+				graph.Edges.Add(new GraphEdge(node0, newNode){IsDirected = true});
+				graph.Edges.Add(new GraphEdge(newNode, node1){IsDirected = true});
+				graph.Nodes.Remove(node2);
+			});
+		}).Start();
 	}
 	private void InitializeComponent()
 	{
