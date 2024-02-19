@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel;
 using Avalonia.Media;
 using ReactiveUI;
@@ -54,4 +55,7 @@ public class GraphEdge : ReactiveObject, INotifyPropertyChanged
 		IsDirected = false;
 		ArrowHeadColor = new SolidColorBrush(Colors.Red);
 	}
+	
+	public EventHandler<GraphEdge>? EdgeRemovedEventHandler;
+
 }

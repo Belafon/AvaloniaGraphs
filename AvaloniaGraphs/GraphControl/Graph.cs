@@ -4,10 +4,12 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using DynamicData;
+using System;
+using System.Linq;
 
 namespace AvaloniaGraphs.GraphControl;
 
-public partial class Graph : UserControl
+public class Graph
 {
 	public ObservableCollection<GraphNode> Nodes { get; private set; } = new();
 	public ObservableCollection<GraphEdge> Edges { get; private set; } = new();
@@ -16,42 +18,52 @@ public partial class Graph : UserControl
 		get; 
 		set; 
 	}
-	public bool ApplyLayoutOnEachAdd { get; set; } = true;
+	public bool ApplyLayoutOnEachAdd { get; set; } = true;	
 	public Graph()
 	{
 		Nodes.CollectionChanged += (sender, args) =>
 		{
-			if(Layout is not null && ApplyLayoutOnEachAdd)
-			{
-				Layout.ApplyLayout(this);
-			}
-			
 			// Remove edges that are connected to removed nodes
 			if(args.OldItems is not null)
 			{
 				foreach(GraphNode node in args.OldItems)
 				{
-					foreach(var edge in EdgesByNode[node])
+					if(EdgesByNode.ContainsKey(node))
 					{
-						Edges.Remove(edge);
+						var edges = EdgesByNode[node].ToList();
+						foreach(var edge in edges)
+						{
+							Edges.Remove(edge);
+						}
+						EdgesByNode.Remove(node);
 					}
-					EdgesByNode.Remove(node);
 				}
 			}
 			
 		};
 		Edges.CollectionChanged += (sender, args) =>
 		{
-			if(Layout is not null && ApplyLayoutOnEachAdd)
-			{
-				Layout.ApplyLayout(this);
-			}
-			
 			if(args.NewItems is not null)
 			{
 				foreach(GraphEdge edge in args.NewItems)
 				{
 					addNewEdgeToDictionary(edge);
+				}
+			}
+			else if(args.OldItems is not null)
+			{
+				foreach(GraphEdge edge in args.OldItems)
+				{
+					if(EdgesByNode.ContainsKey(edge.Start))
+					{
+						EdgesByNode[edge.Start].Remove(edge);
+					}
+					if(EdgesByNode.ContainsKey(edge.End))
+					{
+						EdgesByNode[edge.End].Remove(edge);
+					}
+
+					edge.EdgeRemovedEventHandler?.Invoke(this, edge);
 				}
 			}
 		};

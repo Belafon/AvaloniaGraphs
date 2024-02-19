@@ -37,32 +37,7 @@ public partial class GraphView : UserControl
 
 		foreach (var node in graph.Nodes)
 		{
-			node.OnNodePointerPressedHandler = new EventHandler<PointerPressedEventArgs>((sender, e) =>
-			{
-				if (e.GetCurrentPoint(node).Properties.IsLeftButtonPressed)
-				{
-					draggdNode = node;
-				}
-			});
-
-			node.PointerPressed += node.OnNodePointerPressedHandler;
-
-
-			node.OnRealPositionChangedHandler = new EventHandler<EventArgsWithPositionDiff>((s, e) =>
-			{
-				if (s is GraphNode node)
-				{
-					var position = new Point(node.RealPosition.X, node.RealPosition.Y);
-					foreach (var change in changes)
-					{
-						if (change is ScrollChange scrollChange)
-							position = mapNodePositionDuringCanvasScaling(scrollChange.PointerPosition, position, scrollChange.scale, node);
-						else if (change is MoveChnage moveChnage)
-							position = position + moveChnage.Diff;
-					}
-					node.PositionInCanvas = position;
-				}
-			});
+			bindNodesActions(node);
 		}
 
 		graphCanvas.PointerPressed += (sender, e) =>
@@ -136,9 +111,8 @@ public partial class GraphView : UserControl
 			{
 				foreach (GraphNode node in args.NewItems!)
 				{
-					var x = node.Model.PositionInCanvas.X - startPointOfView.X;
-					var y = node.Model.PositionInCanvas.Y - startPointOfView.Y;
-					node.Model.PositionInCanvas = new Point(x, y);
+					drawNode(node);
+					bindNodesActions(node);
 				}
 			}
 			else if (args.Action == NotifyCollectionChangedAction.Remove)
@@ -146,11 +120,40 @@ public partial class GraphView : UserControl
 				foreach (GraphNode node in args.OldItems!)
 				{
 					node.PointerPressed -= node.OnNodePointerPressedHandler;
-
+					graphCanvas.Children.Remove(node);
 				}
 			}
 		};
+	}
 
+	private void bindNodesActions(GraphNode node)
+	{
+		node.OnNodePointerPressedHandler = new EventHandler<PointerPressedEventArgs>((sender, e) =>
+		{
+			if (e.GetCurrentPoint(node).Properties.IsLeftButtonPressed)
+			{
+				draggdNode = node;
+			}
+		});
+
+		node.PointerPressed += node.OnNodePointerPressedHandler;
+
+
+		node.OnRealPositionChangedHandler = new EventHandler<EventArgsWithPositionDiff>((s, e) =>
+		{
+			if (s is GraphNode node)
+			{
+				var position = new Point(node.RealPosition.X, node.RealPosition.Y);
+				foreach (var change in changes)
+				{
+					if (change is ScrollChange scrollChange)
+						position = mapNodePositionDuringCanvasScaling(scrollChange.PointerPosition, position, scrollChange.scale, node);
+					else if (change is MoveChnage moveChnage)
+						position = position + moveChnage.Diff;
+				}
+				node.PositionInCanvas = position;
+			}
+		});
 	}
 
 	private Point mapNodePositionDuringCanvasScaling(Point currentPointerPosition, Point nodePosition, double scale, GraphNode node)
@@ -179,32 +182,60 @@ public partial class GraphView : UserControl
 	{
 		foreach (var edge in graph.Edges)
 		{
-			var line = new Line();
-			line.Bind(Line.StrokeProperty, new Binding()
-			{
-				Source = edge,
-				Path = nameof(edge.Color)
-			});
-			line.Bind(Line.StrokeThicknessProperty, new Binding()
-			{
-				Source = edge,
-				Path = nameof(edge.Thickness)
-			});
-
-			bindEdgesStart(edge, line);
-			bindEdgesEnd(edge, line);
-
-			// set z-index
-			line.SetValue(Canvas.ZIndexProperty, 1);
-
-			graphCanvas.Children.Add(line);
-
-			if (edge.IsDirected)
-			{
-				var polygon = drawArrowHead(edge, line);
-				bindArrowHeadToLine(edge, line, polygon);
-			}
+			drawEdge(edge, graph);
 		}
+		graph.Edges.CollectionChanged += (sender, args) =>
+		{
+			if (args.Action == NotifyCollectionChangedAction.Add)
+			{
+				foreach (GraphEdge edge in args.NewItems!)
+				{
+					drawEdge(edge, graph);
+				}
+				graph.Layout?.ApplyLayout(graph);
+			}
+		};
+	}
+
+	private void drawEdge(GraphEdge edge, Graph graph)
+	{
+		var line = new Line();
+		line.Bind(Line.StrokeProperty, new Binding()
+		{
+			Source = edge,
+			Path = nameof(edge.Color)
+		});
+		line.Bind(Line.StrokeThicknessProperty, new Binding()
+		{
+			Source = edge,
+			Path = nameof(edge.Thickness)
+		});
+
+		bindEdgesStart(edge, line);
+		bindEdgesEnd(edge, line);
+
+		// set z-index
+		line.SetValue(Canvas.ZIndexProperty, 1);
+
+		graphCanvas.Children.Add(line);
+
+		Polygon? polygon = null;
+		if (edge.IsDirected)
+		{
+			polygon = drawArrowHead(edge, line);
+			bindArrowHeadToLine(edge, line, polygon);
+		}
+
+		edge.EdgeRemovedEventHandler += (sender, args) =>
+		{
+			// remove the line
+			graphCanvas.Children.Remove(line);
+			// remove the arrow head
+			if (polygon is not null)
+			{
+				graphCanvas.Children.Remove(polygon);
+			}
+		};
 	}
 
 	private void bindArrowHeadToLine(GraphEdge edge, Line line, Polygon arrowHead)
@@ -224,7 +255,7 @@ public partial class GraphView : UserControl
 			updateArrowHead(edge, line, arrowHead);
 		};
 	}
-	
+
 	private void updateArrowHead(GraphEdge edge, Line line, Polygon arrowHead)
 	{
 		var direction = line.EndPoint - line.StartPoint;
@@ -271,20 +302,25 @@ public partial class GraphView : UserControl
 		{
 			if (node is not null)
 			{
-				node.Bind(Canvas.LeftProperty, new Binding()
-				{
-					Source = node.Model,
-					Path = nameof(node.Model.X)
-				});
-				node.Bind(Canvas.TopProperty, new Binding()
-				{
-					Source = node.Model,
-					Path = nameof(node.Model.Y)
-				});
-				node.SetValue(Canvas.ZIndexProperty, 2);
-				graphCanvas.Children.Add(node);
+				drawNode(node);
 			}
 		}
+	}
+
+	private void drawNode(GraphNode node)
+	{
+		node.Bind(Canvas.LeftProperty, new Binding()
+		{
+			Source = node.Model,
+			Path = nameof(node.Model.X)
+		});
+		node.Bind(Canvas.TopProperty, new Binding()
+		{
+			Source = node.Model,
+			Path = nameof(node.Model.Y)
+		});
+		node.SetValue(Canvas.ZIndexProperty, 2);
+		graphCanvas.Children.Add(node);
 	}
 
 	private static void bindEdgesStart(GraphEdge edge, Line line)

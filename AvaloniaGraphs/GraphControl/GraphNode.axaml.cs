@@ -20,8 +20,12 @@ public partial class GraphNode : UserControl
 		Border = this.FindControl<Border>("nodesBorder")!;
 		Model = new GraphNodeViewModel();
 		DataContext = Model;
-		Width = 50;
-		Height = 50;
+		if(double.IsNaN(Width))
+			Width = 50;
+		
+		if(double.IsNaN(Height))
+			Height = 50;
+		
 		Background = Brushes.Azure;
 
 		PositionInCanvas = new Point(x, y);
@@ -41,6 +45,7 @@ public partial class GraphNode : UserControl
 		set => Model.Y = value;
 	}
 
+	public bool IsInvariantPositionToGraphLayout { get; set; } = false;
 	public Border Border { get; set; }
 	private Control? _content;
 	public Control? ContentControl

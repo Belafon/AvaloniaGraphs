@@ -14,7 +14,7 @@ public class SpringGraphLayout : GraphLayout
 {
 	double forceAttract = 0.1;
 	double forceSpreadOut = 200;
-	double t = 2;
+	double t = 3;
 	public int Iterations = 200;
 	public int Width = 600;
 	public int Height = 700;
@@ -28,6 +28,25 @@ public class SpringGraphLayout : GraphLayout
 
 		var multiGraph = new Graph();
 		var subgraphsToNodes = new Dictionary<Graph, GraphNode>();
+		int xGraphBias, yGraphBias;
+		applyGridLayoutToGraphComponents(allGraphComponents, multiGraph, subgraphsToNodes, out xGraphBias, out yGraphBias);
+
+		Point startBias = new Point(30, 30);
+		foreach (var subgraph in allGraphComponents)
+		{
+			var startPoint = subgraphsToNodes[subgraph].RealPosition + startBias;
+			var positions = springLayoutFindingAlgorithm(startPoint, subgraph, xGraphBias, yGraphBias);
+		}
+
+	}
+
+	private void applyGridLayoutToGraphComponents(
+		List<Graph> allGraphComponents, 
+		Graph multiGraph, 
+		Dictionary<Graph, GraphNode> subgraphsToNodes, 
+		out int xGraphBias, 
+		out int yGraphBias)
+	{
 		foreach (var subgraph in allGraphComponents)
 		{
 			var node = new GraphNode();
@@ -35,31 +54,31 @@ public class SpringGraphLayout : GraphLayout
 			subgraphsToNodes[subgraph] = node;
 		}
 
-		int xSize = (int)Math.Sqrt(multiGraph.Nodes.Count) + 1;
-		int ySize = xSize;
+
+		int numberOfColumns = 1; 
+		int numberOfRows = 1;
+		
+		if(multiGraph.Nodes.Count > 1){
+			numberOfColumns = (int)Math.Sqrt(multiGraph.Nodes.Count) + 1;
+			numberOfRows = numberOfColumns;
+		}
+
+		
 
 		var nodeList = multiGraph.Nodes.ToList();
 
-		int xGraphBias = Width / xSize;
-		int yGraphBias = Height / ySize;
-		for (int x = 0; x < xSize; x++)
+		xGraphBias = Width / numberOfColumns;
+		yGraphBias = Height / numberOfRows;
+		for (int x = 0; x < numberOfColumns; x++)
 		{
-			for (int y = 0; y < ySize; y++)
+			for (int y = 0; y < numberOfRows; y++)
 			{
-				if (x * ySize + y >= nodeList.Count)
+				if (x * numberOfRows + y >= nodeList.Count)
 					break;
 
-				nodeList[x * ySize + y].SetRealPosition(new Point(x * xGraphBias, y * yGraphBias));
+				nodeList[x * numberOfRows + y].SetRealPosition(new Point(x * xGraphBias, y * yGraphBias));
 			}
 		}
-
-		Point startBias = new Point(30, 30);
-		foreach (var subgraph in allGraphComponents)
-		{
-			var startPoint = subgraphsToNodes[subgraph].RealPosition + startBias;
-			var positions = SpringLayoutFindingAlgorithm(startPoint, subgraph, xGraphBias, yGraphBias);
-		}
-		
 	}
 
 	private List<Graph> findAllGraphsComponents(Graph graph)
@@ -76,46 +95,9 @@ public class SpringGraphLayout : GraphLayout
 			while (queue.Count > 0)
 			{
 				var currentNode = queue.Dequeue();
-				if (visited.Contains(currentNode))
-					continue;
-				visited.Add(currentNode);
-				currentGraph.Nodes.Add(currentNode);
-
-				// if current node has no edges, it is a single graph component
-				if (graph.EdgesByNode.ContainsKey(currentNode) == false)
-					continue;
-
-				foreach (var edge in graph.EdgesByNode[currentNode])
+				if (!visited.Contains(currentNode))
 				{
-					var nextNode = edge.Start == currentNode ? edge.End : edge.Start;
-					if (visited.Contains(nextNode) == false)
-					{
-						queue.Enqueue(nextNode);
-
-						//currentGraph.Edges.Add(edge); // only the sceleton of the graph will be added
-					}
-					
-					if(visited.Contains(nextNode) == false)
-						currentGraph.Edges.Add(edge);
-					
-					// add edge to currentGraph.Edges, if the nextNode doesnt have an edge to the currentNode
-					if(graph.EdgesByNode.ContainsKey(nextNode) && visited.Contains(nextNode))
-					{
-						var hasEdge = false;
-						foreach(var nextEdge in graph.EdgesByNode[nextNode])
-						{
-							if(nextEdge.Start == currentNode || nextEdge.End == currentNode)
-							{
-								hasEdge = true;
-								break;
-							}
-						}
-						if(hasEdge == false)
-						{
-							currentGraph.Edges.Add(edge);
-						}
-					}
-
+					visitNextNode(graph, visited, currentGraph, queue, currentNode);
 				}
 			}
 			graphs.Add(currentGraph);
@@ -123,7 +105,49 @@ public class SpringGraphLayout : GraphLayout
 		return graphs;
 	}
 
-	private Dictionary<GraphNode, (double x, double y)> SpringLayoutFindingAlgorithm(
+	private static void visitNextNode(Graph graph, HashSet<GraphNode> visited, Graph currentGraph, Queue<GraphNode> queue, GraphNode currentNode)
+	{
+		visited.Add(currentNode);
+		currentGraph.Nodes.Add(currentNode);
+
+		// if current node has no edges, it is a single graph component
+		if (graph.EdgesByNode.ContainsKey(currentNode) == false)
+			return;
+
+		foreach (var edge in graph.EdgesByNode[currentNode])
+		{
+			var nextNode = edge.Start == currentNode ? edge.End : edge.Start;
+			if (visited.Contains(nextNode) == false)
+			{
+				queue.Enqueue(nextNode);
+
+				//currentGraph.Edges.Add(edge); // only the sceleton of the graph will be added
+			}
+
+			if (visited.Contains(nextNode) == false)
+				currentGraph.Edges.Add(edge);
+
+			// add edge to currentGraph.Edges, if the nextNode doesnt have an edge to the currentNode
+			if (graph.EdgesByNode.ContainsKey(nextNode) && visited.Contains(nextNode))
+			{
+				var hasEdge = false;
+				foreach (var nextEdge in graph.EdgesByNode[nextNode])
+				{
+					if (nextEdge.Start == currentNode || nextEdge.End == currentNode)
+					{
+						hasEdge = true;
+						break;
+					}
+				}
+				if (hasEdge == false)
+				{
+					currentGraph.Edges.Add(edge);
+				}
+			}
+		}
+	}
+
+	private Dictionary<GraphNode, (double x, double y)> springLayoutFindingAlgorithm(
 		Point startPosition, Graph graph, int width, int height)
 	{
 		if (graph.Nodes.Count == 0)
@@ -132,7 +156,6 @@ public class SpringGraphLayout : GraphLayout
 		if (graph.Nodes.Count == 1)
 		{
 			var node = graph.Nodes.First();
-			
 			node.SetRealPosition(new Point(startPosition.X, startPosition.Y));
 			
 			return new Dictionary<GraphNode, (double x, double y)>() { { node, (startPosition.X, startPosition.Y) } };
@@ -161,10 +184,7 @@ public class SpringGraphLayout : GraphLayout
 					{
 						iteration(graph, nodes, edges, nodePositions, width, height);
 
-						foreach (var node in nodes)
-						{
-							node.SetRealPosition(new Point(nodePositions[node].x, nodePositions[node].y) + startPosition);
-						}
+						setRealPositions(nodes, nodePositions, startPosition);
 					}).Wait();
 				}
 			});
@@ -176,14 +196,20 @@ public class SpringGraphLayout : GraphLayout
 
 			}
 			
-			foreach (var node in nodes)
-			{
-				node.SetRealPosition(new Point(nodePositions[node].x, nodePositions[node].y) + startPosition);
-			}
+			setRealPositions(nodes, nodePositions, startPosition);
 		}
 
 		return nodePositions;
 	}
+	
+	private void setRealPositions(ObservableCollection<GraphNode> nodes, Dictionary<GraphNode, (double x, double y)> nodePositions, Point startPosition)
+	{
+		foreach (var node in nodes)
+		{
+			node.SetRealPosition(new Point(nodePositions[node].x, nodePositions[node].y) + startPosition);
+		}
+	}
+	
 
 	private void iteration(
 		Graph graph,
@@ -222,10 +248,15 @@ public class SpringGraphLayout : GraphLayout
 			var dx = delta[node].dx;
 			var dy = delta[node].dy;
 			var distance = Math.Sqrt(dx * dx + dy * dy);
+			
+			if(distance < 0.00001)
+				distance = 0.00001;
+			
 			var distanceClamped = Math.Max(1, distance);
 			var fx = Math.Min(t, distanceClamped) * (dx / distance);
 			var fy = Math.Min(t, distanceClamped) * (dy / distance);
-			nodePositions[node] = (nodePositions[node].x + fx, nodePositions[node].y + fy);
+			if(!node.IsInvariantPositionToGraphLayout)
+				nodePositions[node] = (nodePositions[node].x + fx, nodePositions[node].y + fy);
 
 			if (nodePositions[node].x > width)
 				nodePositions[node] = (width, nodePositions[node].y);
@@ -248,11 +279,16 @@ public class SpringGraphLayout : GraphLayout
 		var dx = nodePositions[target].x - nodePositions[source].x;
 		var dy = nodePositions[target].y - nodePositions[source].y;
 		var distance = Math.Sqrt(dx * dx + dy * dy);
+		if(distance < 0.00001)
+			distance = 0.00001;
+
 		var force = forceAttract * (distance - forceSpreadOut);
 		var fx = (dx / distance) * force;
 		var fy = (dy / distance) * force;
 		delta[source] = (delta[source].dx + fx, delta[source].dy + fy);
 		delta[target] = (delta[target].dx - fx, delta[target].dy - fy);
+		if(double.IsNaN(delta[source].dx) || double.IsNaN(delta[source].dy))
+			throw new Exception("NaN");
 	}
 
 	private static void countForceCausedByLowAngle(
@@ -274,21 +310,27 @@ public class SpringGraphLayout : GraphLayout
 		var dx1 = nodePositions[node].x - nodePositions[source1].x;
 		var dy1 = nodePositions[node].y - nodePositions[source1].y;
 		var sizeVector1 = Math.Sqrt(dx1 * dx1 + dy1 * dy1);
+		
+		if(sizeVector1 < 0.00001)
+			sizeVector1 = 0.00001;
 
 		var dx2 = nodePositions[node].x - nodePositions[source2].x;
 		var dy2 = nodePositions[node].y - nodePositions[source2].y;
 		var sizeVector2 = Math.Sqrt(dx2 * dx2 + dy2 * dy2);
+
+		if (sizeVector2 < 0.00001)
+			sizeVector2 = 0.00001;
 
 		var dotProduct = dx1 * dx2 + dy1 * dy2;
 
 		var angle = Math.Acos(dotProduct / (sizeVector1 * sizeVector2));
 		if (angle < Math.PI / 4d)
 		{
-			// lower angle means bigger force, make the force strong 
-			if (angle < 0.00001)
-				angle = 0.00001;
+			if (angle < 0.000001)
+				angle = 0.000001;
 
-			var force = (Math.PI / 4d) / angle;
+			// lower angle means bigger force, make the force strong 
+			var force = 2 / angle;
 
 			var fx1 = (dx1 / sizeVector1) * force;
 			var fy1 = (dy1 / sizeVector1) * force;
@@ -304,7 +346,8 @@ public class SpringGraphLayout : GraphLayout
 			var fy3 = (vector3.Y / sizeVector3) * force;
 			delta[source1] = (delta[source1].dx - fx1 + fx3, delta[source1].dy - fy1 + fy3);
 			delta[source2] = (delta[source2].dx - fx2 - fx3, delta[source2].dy - fy2 - fy3);
-
+			if(double.IsNaN(delta[source1].dx) || double.IsNaN(delta[source1].dy))
+				throw new Exception("NaN");
 
 		}
 	}
