@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Drawing;
 using Avalonia.Media;
 using ReactiveUI;
 
@@ -57,5 +58,6 @@ public class GraphEdge : ReactiveObject, INotifyPropertyChanged
 	}
 	
 	public EventHandler<GraphEdge>? EdgeRemovedEventHandler;
-
+	public EventHandler<Tuple<GraphEdge, SubGraph?>>? HideEdgeEventHandler;
+	public EventHandler<Tuple<GraphEdge, SubGraph?>>? ShowEdgeEventHandler;
 }

@@ -5,7 +5,7 @@
             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
             x:Class="AvaloniaGraphs.GraphControl.GraphView"
             xmlns:agc="using:AvaloniaGraphs.GraphControl"
-            x:DataType="agc:GraphControlViewModel">
+            x:DataType="agc:GraphView">
     <ScrollViewer Grid.Row="4" Grid.Column="1"
                 VerticalScrollBarVisibility="Auto"
                 HorizontalScrollBarVisibility="Auto">

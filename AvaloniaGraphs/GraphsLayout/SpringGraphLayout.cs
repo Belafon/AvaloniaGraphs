@@ -16,10 +16,11 @@ public class SpringGraphLayout : GraphLayout
 	double forceSpreadOut = 200;
 	double t = 3;
 	public int Iterations = 200;
-	public int Width = 600;
-	public int Height = 700;
+	public int Width { get; set; } = 600;
+	public int Height {get; set; } = 700;
+	public Point StartPosition { get; set; } = new Point(0, 0);
 	public bool withAnimation = false;
-	public void ApplyLayout(Graph graph)
+	public virtual void ApplyLayout(Graph graph)
 	{
 		if (graph.Nodes.Count == 0)
 			return;
@@ -31,13 +32,11 @@ public class SpringGraphLayout : GraphLayout
 		int xGraphBias, yGraphBias;
 		applyGridLayoutToGraphComponents(allGraphComponents, multiGraph, subgraphsToNodes, out xGraphBias, out yGraphBias);
 
-		Point startBias = new Point(30, 30);
 		foreach (var subgraph in allGraphComponents)
 		{
-			var startPoint = subgraphsToNodes[subgraph].RealPosition + startBias;
+			var startPoint = subgraphsToNodes[subgraph].RealPosition + StartPosition;
 			var positions = springLayoutFindingAlgorithm(startPoint, subgraph, xGraphBias, yGraphBias);
 		}
-
 	}
 
 	private void applyGridLayoutToGraphComponents(
@@ -60,7 +59,9 @@ public class SpringGraphLayout : GraphLayout
 		
 		if(multiGraph.Nodes.Count > 1){
 			numberOfColumns = (int)Math.Sqrt(multiGraph.Nodes.Count) + 1;
-			numberOfRows = numberOfColumns;
+			numberOfRows = numberOfColumns - 1;
+			if (numberOfColumns * numberOfRows < multiGraph.Nodes.Count)
+				numberOfRows++;
 		}
 
 		
@@ -156,7 +157,7 @@ public class SpringGraphLayout : GraphLayout
 		if (graph.Nodes.Count == 1)
 		{
 			var node = graph.Nodes.First();
-			node.SetRealPosition(new Point(startPosition.X, startPosition.Y));
+			node.SetRealPosition(new Point(startPosition.X + width / 2, startPosition.Y + height / 2)); // + width / 2 - node.Width / 2, startPosition.Y + height / 2 - node.Height / 2));
 			
 			return new Dictionary<GraphNode, (double x, double y)>() { { node, (startPosition.X, startPosition.Y) } };
 		}
@@ -350,5 +351,10 @@ public class SpringGraphLayout : GraphLayout
 				throw new Exception("NaN");
 
 		}
+	}
+
+	public virtual void AddSubGraph(SubGraph subGraph, Graph graph)
+	{
+		throw new NotImplementedException();
 	}
 }

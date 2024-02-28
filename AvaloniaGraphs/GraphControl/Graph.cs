@@ -6,20 +6,36 @@ using Avalonia.Markup.Xaml;
 using DynamicData;
 using System;
 using System.Linq;
+using System.ComponentModel;
 
 namespace AvaloniaGraphs.GraphControl;
 
-public class Graph
+public class Graph : INotifyPropertyChanged
 {
 	public ObservableCollection<GraphNode> Nodes { get; private set; } = new();
-	public ObservableCollection<GraphEdge> Edges { get; private set; } = new();
+	
+	private ObservableCollection<GraphEdge> edges = new();
+	public ObservableCollection<GraphEdge> Edges { 
+		get => edges; 
+		private set
+		{
+			edges = value;
+			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Edges)));
+		}
+	}
+
 	public Dictionary<GraphNode, List<GraphEdge>> EdgesByNode = new();
+
+	public event PropertyChangedEventHandler? PropertyChanged;
+
 	public GraphLayout? Layout { 
 		get; 
 		set; 
 	}
-	public bool ApplyLayoutOnEachAdd { get; set; } = true;	
-	public Graph()
+	public bool ApplyLayoutOnEachAdd { get; set; } = true;
+    public bool ApplyLayoutOnEachSubGraphAdd { get; set; } = true;
+
+    public Graph()
 	{
 		Nodes.CollectionChanged += (sender, args) =>
 		{

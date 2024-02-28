@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using AvaloniaGraphs.ViewModels;
+using DynamicData;
 
 namespace AvaloniaGraphs.GraphControl;
 
@@ -13,36 +14,23 @@ public partial class GraphNode : UserControl
 {
 	public GraphNodeViewModel Model { get; }
 	public StackPanel ContentContainer;
+	public SubGraph? ContainerSubGraph { get; set; }
 	public GraphNode(int x = 0, int y = 0)
 	{
 		InitializeComponent();
 		ContentContainer = this.FindControl<StackPanel>("content")!;
 		Border = this.FindControl<Border>("nodesBorder")!;
-		Model = new GraphNodeViewModel();
+		Model = new GraphNodeViewModel(this);
 		DataContext = Model;
-		if(double.IsNaN(Width))
+		if (double.IsNaN(Width))
 			Width = 50;
-		
-		if(double.IsNaN(Height))
+
+		if (double.IsNaN(Height))
 			Height = 50;
-		
+
 		Background = Brushes.Azure;
 
-		PositionInCanvas = new Point(x, y);
 		RealPosition = new Point(x, y);
-
-	}
-
-	public double X
-	{
-		get => Model.X;
-		set => Model.X = value;
-	}
-
-	public double Y
-	{
-		get => Model.Y;
-		set => Model.Y = value;
 	}
 
 	public bool IsInvariantPositionToGraphLayout { get; set; } = false;
@@ -72,12 +60,30 @@ public partial class GraphNode : UserControl
 		set => Model.RealPosition = value;
 	}
 
+	public Point LastRealPosition
+	{
+		get => Model.LastRealPosition;
+		set => Model.LastRealPosition = value;
+	}
+	
+	public Point LastPositionInCanvas
+	{
+		get => Model.LastPositionInCanvas;
+		set => Model.LastPositionInCanvas = value;
+	}
+	
+
+
 	internal EventHandler<EventArgsWithPositionDiff>? OnRealPositionChangedHandler;
 	public void SetRealPosition(Point position)
 	{
 		var diff = RealPosition - PositionInCanvas;
 		RealPosition = position;
 		var args = new EventArgsWithPositionDiff(diff);
+
+/*		if (ContainerSubGraph is not null
+			&& !ContainerSubGraph.StartBorderNode.IsVisible)
+			return;*/
 		OnRealPositionChangedHandler?.Invoke(this, args);
 	}
 
@@ -88,10 +94,13 @@ public partial class GraphNode : UserControl
 	{
 		AvaloniaXamlLoader.Load(this);
 	}
+
+	public Point? DistanceToSubGraph { get; set; }
 }
 
 public class GraphNodeViewModel : ViewModelBase, INotifyPropertyChanged
 {
+	private GraphNode _node;
 	private double x;
 	public double X
 	{
@@ -99,7 +108,6 @@ public class GraphNodeViewModel : ViewModelBase, INotifyPropertyChanged
 		set
 		{
 			this.RaiseAndSetIfChanged(ref x, value);
-			PositionInCanvas = new Point(X, Y);
 		}
 	}
 
@@ -110,38 +118,19 @@ public class GraphNodeViewModel : ViewModelBase, INotifyPropertyChanged
 		set
 		{
 			this.RaiseAndSetIfChanged(ref y, value);
-			PositionInCanvas = new Point(X, Y);
 		}
 	}
 
+	public Point LastPositionInCanvas { get; set; }
+	public Point LastRealPosition { get; set; }
 	private Point positionInCanvas;
 	internal Point PositionInCanvas
 	{
-		get => new Point(X, Y);
+		get => new Point(X + _node.Width / 2, Y + _node.Height / 2);
 		set
-		{
-			if (X == value.X 
-				&& Y == value.Y)
-				return;
-
-			if(double.IsNaN(value.X) 
-				&& double.IsNaN(X) 
-				&& Y == value.Y)
-				return;
-
-			if(double.IsNaN(Y) 
-				&& double.IsNaN(value.Y) 
-				&& X == value.X)
-				return;
-			
-			if(double.IsNaN(value.X) 
-				&& double.IsNaN(X) 
-				&& double.IsNaN(value.Y) 
-				&& double.IsNaN(Y))
-				return;
-		
-			X = value.X;
-			Y = value.Y;
+		{	
+			X = value.X - _node.Width / 2;
+			Y = value.Y - _node.Height / 2;
 			this.RaiseAndSetIfChanged(ref positionInCanvas, value);
 		}
 	}
@@ -150,7 +139,15 @@ public class GraphNodeViewModel : ViewModelBase, INotifyPropertyChanged
 	public Point RealPosition
 	{
 		get => realPosition;
-		set => this.RaiseAndSetIfChanged(ref realPosition, value);
+		set
+		{
+			this.RaiseAndSetIfChanged(ref realPosition, value);	
+		}
+	}
+
+	public GraphNodeViewModel(GraphNode node)
+	{
+		_node = node;
 	}
 }
 
@@ -162,3 +159,4 @@ public class EventArgsWithPositionDiff : EventArgs
 		Diff = diff;
 	}
 }
+

@@ -9,9 +9,16 @@ using Avalonia;
 namespace AvaloniaGraphs.GraphsLayout;
 public class GridGraphLayout : GraphLayout
 {
-	public int Width = 800;
-	public int Height = 900;
-	public void ApplyLayout(Graph graph)
+	public int Width { get; set; } = 800;
+	public int Height { get; set; } = 900;
+    public Point StartPosition { get; set; } = new Point(30, 30);
+
+    public void AddSubGraph(SubGraph subGraph, Graph graph)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void ApplyLayout(Graph graph)
 	{
 		if (graph.Nodes.Count == 0)
 			return;
@@ -28,8 +35,8 @@ public class GridGraphLayout : GraphLayout
 		}
 
 		int xSize = (int)Math.Sqrt(graph.Nodes.Count) + 1;
-		int ySize = xSize; 
-		
+		int ySize = xSize;
+
 		var nodeList = new List<GraphNode>();
 
 		foreach (var subgraph in allGraphComponents)
@@ -38,22 +45,21 @@ public class GridGraphLayout : GraphLayout
 		}
 
 		int xGraphBias = Width / xSize;
-		int yGraphBias = Height / ySize;
-		Point startBias = new Point(30, 30);
-		
+		int yGraphBias = Height / ySize; 
+
 		for (int x = 0; x < xSize; x++)
 		{
 			for (int y = 0; y < ySize; y++)
 			{
 				if (x * ySize + y >= nodeList.Count)
 					break;
-					
-				nodeList[x * ySize + y].SetRealPosition(new Point(x * xGraphBias, y * yGraphBias) + startBias);
+
+				nodeList[x * ySize + y].SetRealPosition(new Point(x * xGraphBias, y * yGraphBias) + StartPosition);
 			}
 		}
-		
+
 	}
-	
+
 	private List<Graph> findAllGraphsComponents(Graph graph)
 	{
 		var visited = new HashSet<GraphNode>();
@@ -72,9 +78,9 @@ public class GridGraphLayout : GraphLayout
 					continue;
 				visited.Add(currentNode);
 				currentGraph.Nodes.Add(currentNode);
-				
+
 				// if current node has no edges, it is a single graph component
-				if(graph.EdgesByNode.ContainsKey(currentNode) == false)
+				if (graph.EdgesByNode.ContainsKey(currentNode) == false)
 					continue;
 
 				foreach (var edge in graph.EdgesByNode[currentNode])
@@ -87,7 +93,7 @@ public class GridGraphLayout : GraphLayout
 						currentGraph.Edges.Add(edge); // only the sceleton of the graph will be added
 					}
 					// currentGraph.Edges.Add(edge); // all edges will be added
-					
+
 				}
 			}
 			graphs.Add(currentGraph);
