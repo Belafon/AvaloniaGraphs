@@ -2,7 +2,7 @@
 
 AvaloniaGraphs is a simple graph plotting library for Avalonia UI.
 
-![exampleSubgraph](exampleSubgraph.png)
+![exampleSubgraph](Assets/exampleSubgraph.png)
 
 ### How to use
 
