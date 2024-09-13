@@ -57,9 +57,60 @@ graph.Layout?.ApplyLayout(graph);
 
 mainPanel.Children.Add(graphView);
 ```
+#### Defining subgraphs
+
+You can define a subgraph. It represents
+a group of nodes that are displyed as a single node when 
+zoomed out, but when zoomed in, the subnodes are displayed.
+
+```csharp
+
+var node0 = new GraphNode() { ContentControl = new TextBlock() { Text = "Node 0" } };
+var node2 = new GraphNode() { ContentControl = new TextBlock() { Text = "Node 2" } };
+var node3 = new GraphNode() { ContentControl = new TextBlock() { Text = "Node 3" } };
+
+var subGraph = new SubGraph()
+{
+    ContentControl = new TextBlock() { Text = "SubGraph" },
+    Graph = new Graph()
+    {
+        Nodes = {
+            node2,
+            node3
+        },
+        Edges = {
+            new GraphEdge(node2, node3) { IsDirected = true }
+        },
+        Layout = new SpringGraphLayout()
+        {
+            Iterations = 100,
+            Width = 800,
+            Height = 400
+        }
+    }
+};
+
+var graph = new Graph()
+{
+    Nodes = {
+        node0,
+        subGraph
+    },
+    Edges = {
+        new GraphEdge(node0, node2) { IsDirected = true }
+    },
+    Layout = new SpringGraphLayoutWithSubGraphs()
+    {
+        Iterations = 1000,
+        Width = 800,
+        Height = 400,
+    }
+};
+
+```
 
 ### Examples
 
-Can be found in AvaloniaGraphs/Views/MainWindow.xaml.cs
+Can be found in `Views/MainWindow.xaml.cs`
 
 You can uncomment here the example you want to run.
