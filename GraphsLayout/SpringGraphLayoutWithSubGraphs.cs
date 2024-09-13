@@ -11,8 +11,8 @@ public class SpringGraphLayoutWithSubGraphs : SpringGraphLayout
 {
 	public override void ApplyLayout(Graph graph)
 	{
-		var widthOfSubgraphsContent = this.Width / Math.Sqrt(graph.Nodes.Count + 1);
-		var heightOfSubgraphsContent = this.Height / Math.Sqrt(graph.Nodes.Count + 1);
+		var widthOfSubgraphsContent = this.Width / ((Math.Sqrt(graph.Nodes.Count + 1) * 2));
+		var heightOfSubgraphsContent = this.Height / ((Math.Sqrt(graph.Nodes.Count + 1) * 2));
 
 		base.ApplyLayout(graph);
 
@@ -34,9 +34,9 @@ public class SpringGraphLayoutWithSubGraphs : SpringGraphLayout
 		var subGraphsLayout = subGraph.Graph.Layout;
 		if (subGraphsLayout is not null)
 		{
-			if(subGraphsLayout.StartPosition == default)
+			if (subGraphsLayout.StartPosition == default)
 				subGraphsLayout.StartPosition = StartPosition;
-				
+
 			subGraphsLayout.Width = (int)widthOfContent;
 			subGraphsLayout.Height = (int)heightOfContent;
 			subGraphsLayout.ApplyLayout(subGraph.Graph);
@@ -55,12 +55,7 @@ public class SpringGraphLayoutWithSubGraphs : SpringGraphLayout
 			if (subGraphNode.Height > maxHeight)
 				maxHeight = subGraphNode.Height;
 		}
-		double diameterOfSubGraphNodesWidth = widthSum / subGraph.Graph.Nodes.Count;
-		double diameterOfSubGraphNodesHeight = heightSum / subGraph.Graph.Nodes.Count;
 
-
-		subGraph.MinWidthOfBorderContainer = Math.Sqrt(subGraph.Graph.Nodes.Count) * maxWidth + StartPosition.X * 2;
-		subGraph.MinHeightOfBorderContainer = Math.Sqrt(subGraph.Graph.Nodes.Count) * maxHeight + StartPosition.Y * 2;
 		subGraph.StartBorderNode.Width = widthOfContainer;
 		subGraph.StartBorderNode.Height = heightOfContainer;
 
@@ -76,7 +71,18 @@ public class SpringGraphLayoutWithSubGraphs : SpringGraphLayout
 		moveSubGraphsNodes(subGraph, startPosition + moveToLeftTopCorner);
 		subGraph.StartBorderNode.PositionInCanvas += startPosition;
 		subGraph.StartBorderNode.RealPosition += startPosition;
-		
+
+		if (subGraph.Graph.Nodes.Count == 0)
+		{
+			subGraph.MinWidthOfBorderContainer =  maxWidth * 2 + StartPosition.X * 2;
+			subGraph.MinHeightOfBorderContainer = maxHeight * 2 + StartPosition.Y * 2;
+		}
+		else
+		{
+			subGraph.MinWidthOfBorderContainer = Math.Sqrt(subGraph.Graph.Nodes.Count) * Math.Sqrt(maxWidth) * 4;
+			subGraph.MinHeightOfBorderContainer = Math.Sqrt(subGraph.Graph.Nodes.Count) * Math.Sqrt(maxHeight) * 4;
+
+		}
 		//moveSubGraphsNodes(subGraph, startPosition + moveToLeftTopCorner);
 	}
 
@@ -103,12 +109,11 @@ public class SpringGraphLayoutWithSubGraphs : SpringGraphLayout
 			{
 				node.SetRealPosition(node.RealPosition + diff);
 			}
-			else 
+			else
 			{
 				node.SetRealPosition(node.RealPosition + diff);
 			}
 		}
-
 	}
 
 	public override void AddSubGraph(SubGraph subGraph, Graph graph)

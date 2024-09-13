@@ -29,9 +29,28 @@ public class SubGraph : GraphNode, INotifyPropertyChanged
 	/// the subgraphs are hidden. Also the border of the container is hidden
 	/// This value can be changed by a <see cref="GraphLayout"/>
 	/// </summary>
-	public double MinWidthOfBorderContainer { get; set; }
-	public double MinHeightOfBorderContainer { get; internal set; }
 
+	private double minWidthOfBorderContainer;
+	public double MinWidthOfBorderContainer { 
+		get => minWidthOfBorderContainer;
+		set
+		{
+			minWidthOfBorderContainer = value;
+			OnMinWidthOrHeightBorderContainerChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(MinWidthOfBorderContainer)));
+		}
+	}
+
+	private double minHeightOfBorderContainer;
+	public double MinHeightOfBorderContainer { 
+		get => minHeightOfBorderContainer;
+		set
+		{
+			minHeightOfBorderContainer = value;
+			OnMinWidthOrHeightBorderContainerChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(MinHeightOfBorderContainer)));
+		}
+	}
+
+	public event PropertyChangedEventHandler? OnMinWidthOrHeightBorderContainerChanged;
 	public SubGraph(int x = 0, int y = 0) : base(x, y)
 	{
 		BorderContainer = StartBorderNode.Border;
@@ -70,6 +89,8 @@ public class SubGraph : GraphNode, INotifyPropertyChanged
 			Text = "Subgraph title",
 			Foreground = Brushes.White,
 		};
+		
+		BorderContainerTitle = textBlock;
 
 		DockPanel.SetDock(textBlock, Dock.Bottom);
 		dockPanel.Children.Add(textBlock);

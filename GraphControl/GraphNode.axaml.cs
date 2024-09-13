@@ -35,16 +35,16 @@ public partial class GraphNode : UserControl
 
 	public bool IsInvariantPositionToGraphLayout { get; set; } = false;
 	public Border Border { get; set; }
-	private Control? _content;
+	private Control? _contentControl;
 	public Control? ContentControl
 	{
-		get => _content;
+		get => _contentControl;
 		set
 		{
 			ContentContainer.Children.Clear();
 			if (value is not null)
 				ContentContainer.Children.Add(value);
-			_content = value;
+			_contentControl = value;
 		}
 	}
 
@@ -81,9 +81,10 @@ public partial class GraphNode : UserControl
 		RealPosition = position;
 		var args = new EventArgsWithPositionDiff(diff);
 
-/*		if (ContainerSubGraph is not null
+		if (ContainerSubGraph is not null
 			&& !ContainerSubGraph.StartBorderNode.IsVisible)
-			return;*/
+			return;
+			
 		OnRealPositionChangedHandler?.Invoke(this, args);
 	}
 

@@ -57,7 +57,6 @@ public class GridGraphLayout : GraphLayout
 				nodeList[x * ySize + y].SetRealPosition(new Point(x * xGraphBias, y * yGraphBias) + StartPosition);
 			}
 		}
-
 	}
 
 	private List<Graph> findAllGraphsComponents(Graph graph)

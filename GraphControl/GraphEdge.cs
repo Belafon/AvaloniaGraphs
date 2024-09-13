@@ -23,7 +23,12 @@ public class GraphEdge : ReactiveObject, INotifyPropertyChanged
 		get => color;
 		set => this.RaiseAndSetIfChanged(ref color, value);
 	}
-	public int Thickness { get; set; }
+	
+	private int thickness;
+	public int Thickness { 
+		get => thickness;
+		set => this.RaiseAndSetIfChanged(ref thickness, value);
+	}
 	public bool isDirected = false;
 	public bool IsDirected { 
 		get => isDirected;
@@ -46,7 +51,13 @@ public class GraphEdge : ReactiveObject, INotifyPropertyChanged
 		get => arrowHeadWidth;
 		set => this.RaiseAndSetIfChanged(ref arrowHeadWidth, value);
 	}
-	public GraphEdge(GraphNode start, GraphNode end, 
+	private int zIndex;
+    public int ZIndex { 
+		get => zIndex;
+		set => this.RaiseAndSetIfChanged(ref zIndex, value);
+	}
+
+    public GraphEdge(GraphNode start, GraphNode end, 
 	int thickness = 10)
 	{
 		Start = start;

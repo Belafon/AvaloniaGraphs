@@ -33,9 +33,13 @@ public class Graph : INotifyPropertyChanged
 		set; 
 	}
 	public bool ApplyLayoutOnEachAdd { get; set; } = true;
-    public bool ApplyLayoutOnEachSubGraphAdd { get; set; } = true;
+	public bool ApplyLayoutOnEachSubGraphAdd { get; set; } = true;
+	
+	public void ApplyLayout(){
+		Layout?.ApplyLayout(this);
+	}
 
-    public Graph()
+	public Graph()
 	{
 		Nodes.CollectionChanged += (sender, args) =>
 		{
@@ -109,4 +113,19 @@ public class Graph : INotifyPropertyChanged
 		EdgesByNode[edge.End].Add(edge);
 	}
 
+    internal void AddAllNodes(List<GraphNode> nodes)
+    {
+		for (int i = 0; i < nodes.Count; i++)
+		{
+			Nodes.Add(nodes[i]);
+		}
+    }
+
+    internal void AddAllEdges(List<GraphEdge> edges)
+    {
+		for (int i = 0; i < edges.Count; i++)
+		{
+			Edges.Add(edges[i]);
+		}
+    }
 }

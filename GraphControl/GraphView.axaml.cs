@@ -12,7 +12,6 @@ using DynamicData;
 using System.Collections.Specialized;
 using Avalonia.Input;
 using System.Collections.Generic;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Linq;
 using Avalonia.VisualTree;
 
@@ -49,7 +48,7 @@ public partial class GraphView : UserControl
 		InitializeComponent();
 		graphCanvas = this.FindControl<Canvas>("canvas")!;
 
-		var rectangle = new GraphNode
+/*		var rectangle = new GraphNode
 		{
 			Width = graph.Layout!.Width,
 			Height = graph.Layout!.Height,
@@ -71,11 +70,11 @@ public partial class GraphView : UserControl
 				Height = graph.Layout!.Height,
 			},
 			Background = new SolidColorBrush(Colors.Gray),
-		};
+		};*/
 
 
 		InitializeGraphView(graph);
-
+/*
 		rectangle2.SetValue(Canvas.ZIndexProperty, -9);
 		rectangle2.ContentControl.SetValue(Canvas.ZIndexProperty, -9);
 		Canvas.SetLeft(rectangle2, graph.Layout.StartPosition.X + graph.Layout.Width / 2);
@@ -89,7 +88,32 @@ public partial class GraphView : UserControl
 
 		graphCanvas.Children.Add(rectangle);
 		graphCanvas.Children.Add(rectangle2);
+*/
+		
+		Queue<SubGraph> subGraphsToCheck = new();
+		foreach (var node in graph.Nodes)
+		{
+			if (node is SubGraph subGraph)
+			{
+				subGraphsToCheck.Enqueue(subGraph);
+			}
+		}
 
+		while (subGraphsToCheck.Count > 0)
+		{
+			var subGraph = subGraphsToCheck.Dequeue();
+			checkVisibilityOfNodes(subGraph);
+			if(!subGraph.IsVisible)
+				continue;
+
+			foreach (var node in subGraph.Graph.Nodes)
+			{
+				if (node is SubGraph subGraphIn)
+				{
+					subGraphsToCheck.Enqueue(subGraphIn);
+				}
+			}
+		}
 	}
 
 	private void InitializeGraphView(Graph graph)
@@ -157,7 +181,7 @@ public partial class GraphView : UserControl
 
 			// zoom in and out
 			var delta = e.Delta.Y;
-			var scale = delta < 0 ? 1.1 : 0.9;
+			var scale = delta <= 0 ? 0.9 : 1.1;
 			var currentPointerPosition = e.GetPosition(graphCanvas);
 
 			// change subgraphs containers sizes and checks the visibility content
@@ -215,6 +239,10 @@ public partial class GraphView : UserControl
 			Path = nameof(subGraph.StartBorderNode.Model.Y)
 		});
 
+		subGraph.OnMinWidthOrHeightBorderContainerChanged += (s, e) =>
+		{
+			checkVisibilityOfNodes(subGraph);
+		};
 
 		subGraph.SetValue(Canvas.ZIndexProperty, 5);
 		// 
@@ -474,7 +502,7 @@ public partial class GraphView : UserControl
 
 			// zoom in and out
 			var delta = e.Delta.Y;
-			var scale = delta < 0 ? 1.1 : 0.9;
+			var scale = delta <= 0 ? 0.9 : 1.1;
 			var currentPointerPosition = e.GetPosition(graphCanvas);
 			foreach (var node in graph.Nodes)
 			{
@@ -771,6 +799,16 @@ public partial class GraphView : UserControl
 		{
 			showEdge(args, line, arrowHead);
 		};
+		
+		edge.PropertyChanged += (s, e) =>
+		{
+			if (e.PropertyName == "ZIndex")
+			{
+				line.SetValue(Canvas.ZIndexProperty, edge.ZIndex);
+				if (arrowHead is not null)
+					arrowHead.SetValue(Canvas.ZIndexProperty, edge.ZIndex);
+			}
+		};
 	}
 
 	private void hideEdge(Tuple<GraphEdge, SubGraph?> args, Line line, Polygon? arrowHead)
@@ -886,6 +924,7 @@ public partial class GraphView : UserControl
 					new Point(mainPoint.X - edge.ArrowHeadLength * direction.X - edge.ArrowHeadWidth * direction.Y, mainPoint.Y - edge.ArrowHeadLength * direction.Y + edge.ArrowHeadWidth * direction.X),
 					new Point(mainPoint.X - edge.ArrowHeadLength * direction.X + edge.ArrowHeadWidth * direction.Y, mainPoint.Y - edge.ArrowHeadLength * direction.Y - edge.ArrowHeadWidth * direction.X)
 		};
+		arrowHead.Fill = edge.ArrowHeadColor;
 	}
 
 	private Polygon drawArrowHead(GraphEdge edge, Line line)
